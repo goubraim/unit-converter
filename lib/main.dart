@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() {
@@ -92,13 +93,19 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             SizedBox(height: 50.0),
-            TextField(
+            TextFormField(
               decoration: InputDecoration(
                 labelText: 'أدخل القيمة',
               ),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+              ],
+              validator: (v) =>
+                  num.tryParse(v) == null ? "قيمة غير صحيحة" : null,
               onChanged: (value) {
                 setState(() {
-                  _value = double.parse(value);
+                  _value = double.parse('${value}');
                 });
               },
             ),
