@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:unit_converter/ads/Ads.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,27 +34,102 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  BannerAd bannerAd;
-  bool isLoaded = false;
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    bannerAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: "ca-app-pub-3940256099942544/6300978111",
-      listener: BannerAdListener(onAdLoaded: (ad) {
-        setState(() {
-          isLoaded = true;
-        });
-        print('Banner Ad Loaded');
-      }, onAdFailedToLoad: (ad, error) {
-        ad.dispose();
-      }),
-      request: AdRequest(),
-    );
-    bannerAd.load();
+  double height = 0, width = 0;
+  BannerAd? bannerAd;
+  bool isloaded = false;
+  final AdSize _adSize = AdSize.largeBanner;
+
+  InterstitialAd? _interstitialAd;
+  int maxFailedLoadAttempts = 3;
+  int _numInterstitialLoadAttempts = 0;
+
+  void _createInterstitialAd() {
+    InterstitialAd.load(
+        adUnitId: Ads.interstitialAdUnitId,
+        request: AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            print('$ad loaded');
+            _interstitialAd = ad;
+            _numInterstitialLoadAttempts = 0;
+            _interstitialAd!.setImmersiveMode(true);
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            print('InterstitialAd failed to load: $error.');
+            _numInterstitialLoadAttempts += 1;
+            _interstitialAd = null;
+            if (_numInterstitialLoadAttempts <= maxFailedLoadAttempts) {
+              _createInterstitialAd();
+            }
+          },
+        ));
   }
 
+  void _showInterstitialAd() {
+    if (_interstitialAd == null) {
+      print('Warning: attempt to show interstitial before loaded.');
+      return;
+    }
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (InterstitialAd ad) =>
+          print('ad onAdShowedFullScreenContent.'),
+      onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        print('$ad onAdDismissedFullScreenContent.');
+        ad.dispose();
+        _createInterstitialAd();
+      },
+      onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        print('$ad onAdFailedToShowFullScreenContent: $error');
+        ad.dispose();
+        _createInterstitialAd();
+      },
+    );
+    _interstitialAd!.show();
+    _interstitialAd = null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _createInterstitialAd();
+    bannerAd = BannerAd(
+      adUnitId: Ads.bannerAdUnitId,
+      request: AdRequest(),
+      size: _adSize,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            isloaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    );
+    bannerAd!.load();
+  }
+
+  @override
+  void dispose() {
+    bannerAd?.dispose();
+    _interstitialAd?.dispose();
+    super.dispose();
+  }
+
+  Widget checkForAd() {
+    if (isloaded == true) {
+      return Container(
+        height: _adSize.height.toDouble(),
+        width: _adSize.width.toDouble(),
+        child: AdWidget(
+          ad: bannerAd!,
+        ),
+      );
+    } else {
+      return CircularProgressIndicator();
+    }
+  }
   final TextStyle labelStyle = TextStyle(
     fontSize: 16.0,
   );
@@ -87,6 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
   };
   @override
   Widget build(BuildContext context) {
+    height = MediaQuery.of(context).size.height;
+    width = MediaQuery.of(context).size.width;
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(15.0),
@@ -159,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             SizedBox(height: 25.0),
-            isLoaded
+            isloaded
                 ? Container(
                     height: 50,
                     child: AdWidget(
@@ -169,13 +247,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 : SizedBox(height: 25.0),
             MaterialButton(
               minWidth: double.infinity,
-              onPressed: _convert,
+              onPressed: () {
+          _showInterstitialAd();
+          _convert();
+        },
               child: Text(
                 'تحويل',
                 style: TextStyle(color: Colors.white),
               ),
               color: Theme.of(context).primaryColor,
             ),
+            SizedBox(height: 10),
+            checkForAd(),
+            SizedBox(width: width),
             SizedBox(height: 50.0),
             Text(
               _results,
