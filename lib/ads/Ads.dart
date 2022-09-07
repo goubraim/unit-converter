@@ -2,6 +2,8 @@ import 'dart:io' as io;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class Ads {
+  Future<InitializationStatus> initialization;
+  Ads(this.initialization);
   static bool _testMode = true;
 
   ///
@@ -14,9 +16,10 @@ class Ads {
   }
 
   static String get bannerAdUnitId {
-    if (_testMode == true) {
+    /*if (_testMode == true) {
       return BannerAd.testAdUnitId;
-    } else if (io.Platform.isAndroid) {
+    } else */
+    if (io.Platform.isAndroid) {
       return "";
     } else {
       throw new UnsupportedError("UnsupportedError");
@@ -24,9 +27,10 @@ class Ads {
   }
 
   static String get interstitialAdUnitId {
-    if (_testMode == true) {
+    /*if (_testMode == true) {
       return InterstitialAd.testAdUnitId;
-    } else if (io.Platform.isAndroid) {
+    } else */
+    if (io.Platform.isAndroid) {
       return "";
     } else {
       throw new UnsupportedError("UnsupportedError");

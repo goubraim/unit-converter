@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Unit Converter',
+        title: 'درهم ريال فرنك',
         theme: ThemeData(primarySwatch: Colors.teal),
         home: Scaffold(
           appBar: AppBar(
@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
         request: AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(
           onAdLoaded: (InterstitialAd ad) {
-            print('$ad loaded');
+            // print('$ad loaded');
             _interstitialAd = ad;
             _numInterstitialLoadAttempts = 0;
             _interstitialAd!.setImmersiveMode(true);
@@ -130,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return CircularProgressIndicator();
     }
   }
+
   final TextStyle labelStyle = TextStyle(
     fontSize: 16.0,
   );
@@ -145,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'فرنك',
   ];
 
-  double _value;
+  double _value = 0;
   String _fromMesaures = 'درهم';
   String _toMesaures = 'ريال';
   String _results = "";
@@ -173,14 +174,16 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 50.0),
             TextFormField(
               decoration: InputDecoration(
-                labelText: 'أدخل القيمة',
+                // labelText: 'أدخل القيمة',
+                hintText: 'أدخل القيمة',
               ),
+              textAlign: TextAlign.center,
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
               ],
               validator: (v) =>
-                  num.tryParse(v) == null ? "قيمة غير صحيحة" : null,
+                  num.tryParse(v!) == null ? "قيمة غير صحيحة" : null,
               onChanged: (value) {
                 setState(() {
                   _value = double.parse('${value}');
@@ -194,7 +197,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('الى', style: labelStyle),
+                    Text(
+                      'الى',
+                      style: labelStyle,
+                      textAlign: TextAlign.center,
+                    ),
                     DropdownButton(
                       items: _mesaures
                           .map((String value) => DropdownMenuItem<String>(
@@ -204,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           .toList(),
                       onChanged: (value) {
                         setState(() {
-                          _toMesaures = value;
+                          _toMesaures = value as String;
                         });
                       },
                       value: _toMesaures,
@@ -217,6 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'من',
                       style: labelStyle,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
                     ),
                     DropdownButton(
                       items: _mesaures
@@ -225,11 +234,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 value: value,
                               ))
                           .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _fromMesaures = value;
-                        });
-                      },
+                      onChanged: (value) =>
+                          setState(() => _fromMesaures = value as String),
                       value: _fromMesaures,
                     )
                   ],
@@ -237,20 +243,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             SizedBox(height: 25.0),
-            isloaded
-                ? Container(
-                    height: 50,
-                    child: AdWidget(
-                      ad: bannerAd,
-                    ),
-                  )
-                : SizedBox(height: 25.0),
             MaterialButton(
               minWidth: double.infinity,
               onPressed: () {
-          _showInterstitialAd();
-          _convert();
-        },
+                _showInterstitialAd();
+                _convert();
+              },
               child: Text(
                 'تحويل',
                 style: TextStyle(color: Colors.white),
@@ -278,8 +276,8 @@ class _HomeScreenState extends State<HomeScreen> {
     print(_value);
 
     if (_value != 0 && _fromMesaures.isNotEmpty && _toMesaures.isNotEmpty) {
-      int from = _mesauresMap[_fromMesaures];
-      int to = _mesauresMap[_toMesaures];
+      int? from = _mesauresMap[_fromMesaures];
+      int? to = _mesauresMap[_toMesaures];
 
       var multiplier = _formulas[from.toString()][to];
 
